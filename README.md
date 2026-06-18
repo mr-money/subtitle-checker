@@ -12,6 +12,7 @@
 - ⏱️ **时间轴重分配** — 拆分后按字数比例平分时间段，无缝衔接
 - 🔍 **断词保护** — 内置不可拆词表，避免在成语/连词中间断开
 - ✅ **输出验证** — 自动检查每行字数和断词问题
+- 🎤 **大音频ASR** — 自动切片逐段转录，支持5MB-15MB+的音频文件
 
 ## 安装
 
@@ -37,7 +38,7 @@ python scripts/subtitle_fixer.py input.srt --corrections fixes.json -v
 
 ## 快速开始
 
-### Python CLI
+### 1. 字幕修正（subtitle_fixer.py）
 
 ```bash
 # 基本用法
@@ -50,7 +51,30 @@ python scripts/subtitle_fixer.py input.srt --corrections fixes.json --max-chars 
 python scripts/subtitle_fixer.py input.srt -o output_fixed.srt
 ```
 
-### Node.js API
+### 2. 大音频ASR转录（audio_split_asr.py）
+
+当音频文件较大（>1MB），直接调用 ASR API 会超过 10MB base64 限制。此脚本自动切片逐段转录：
+
+```bash
+# 转录音频（默认30秒一段）
+python scripts/audio_split_asr.py input.m4a
+
+# 指定段长和输出
+python scripts/audio_split_asr.py input.m4a --segment-seconds 30 -o transcript.json
+
+# 指定语言
+python scripts/audio_split_asr.py input.m4a --language auto
+```
+
+**工作原理**：
+1. ffmpeg 将 m4a 转为 wav 并按30秒切段（每段 ~1MB base64）
+2. 逐段调用 mimo-v2.5-asr API
+3. 拼接完整转录结果，输出到 JSON（含每段时间戳）
+
+**依赖**：ffmpeg, openai (`pip install openai`)
+**环境变量**：`XIAOMI_API_KEY`, `XIAOMI_BASE_URL`（在 `.env` 中配置）
+
+### 3. Node.js API
 
 ```javascript
 const { processFile } = require('./scripts/subtitle_fixer');
@@ -64,6 +88,20 @@ const result = processFile(
 
 console.log(`原始: ${result.stats.orig} → 输出: ${result.stats.out}`);
 console.log(`修正: ${result.stats.fix} | 拆分: ${result.stats.split}`);
+```
+
+## 完整工作流（推荐）
+
+对于一条完整的字幕检查任务：
+
+```
+原始文件: index.m4a (音频) + index.txt (ASR初始字幕)
+    │
+    ├──→ audio_split_asr.py → ASR 全文转录
+    │
+    ├──→ 对比 ASR 转录 vs index.txt → 发现错字 → 构建修正词典
+    │
+    └──→ subtitle_fixer.py + 修正词典 → 输出 index_fixed.txt
 ```
 
 ## 输入/输出格式
@@ -135,10 +173,12 @@ subtitle-checker/
 ├── SKILL.md                        # Hermes Agent 技能定义
 ├── README.md                       # 本文档
 ├── scripts/
-│   ├── subtitle_fixer.py           # Python 版（完整功能）
-│   └── subtitle_fixer.js           # Node.js 版
+│   ├── subtitle_fixer.py           # 字幕修正（Python）
+│   ├── subtitle_fixer.js           # 字幕修正（Node.js）
+│   └── audio_split_asr.py          # 大音频切片ASR转录
 ├── references/
 │   ├── mimo-asr-api.md             # MiMo ASR API 参考
+│   ├── mimo-asr-setup.md           # MiMo ASR 配置指南
 │   ├── asr-error-patterns.md       # ASR常见错误模式库
 │   └── asr-correction-patterns.md  # 错误修正模式指南
 ├── examples/
@@ -150,8 +190,14 @@ subtitle-checker/
 
 ## 依赖
 
-- **Python 版本**：无外部依赖，纯标准库（Python 3.6+）
-- **Node.js 版本**：无外部依赖，纯标准库（Node.js 14+）
+| 工具 | Python 版 | Node.js 版 | audio_split_asr |
+|------|-----------|------------|-----------------|
+| Python 3.6+ | ✅ | — | ✅ |
+| Node.js 14+ | — | ✅ | — |
+| ffmpeg | — | — | ✅ |
+| openai | — | — | ✅ |
+
+字幕修正脚本（subtitle_fixer）**零外部依赖**，纯标准库。
 
 ## 适用场景
 
@@ -159,6 +205,7 @@ subtitle-checker/
 - 演讲、教学、访谈等口语类内容
 - 需要修正错字、控制每行长度、保证时间轴对齐
 - 繁体中文内容转简体
+- 大音频文件的ASR转录与字幕校验
 
 ## License
 
