@@ -2,7 +2,7 @@
 
 中文SRT字幕检查与修正工具 — 修复ASR错字、智能拆分长行、繁转简、时间轴重分配。
 
-专为语音识别(ASR)生成的中文演讲/教学类字幕设计。
+专为语音识别(ASR)生成的中文演讲/教学类字幕设计，同时也是一个 [Hermes Agent](https://hermes-agent.nousresearch.com) 技能。
 
 ## 功能特性
 
@@ -13,25 +13,47 @@
 - 🔍 **断词保护** — 内置不可拆词表，避免在成语/连词中间断开
 - ✅ **输出验证** — 自动检查每行字数和断词问题
 
+## 安装
+
+### Hermes Agent 技能安装
+
+```bash
+# 方式一：直接克隆到技能目录
+git clone git@github.com:mr-money/subtitle-checker.git ~/.hermes/skills/media/subtitle-checker
+
+# 方式二：在 Hermes 会话中让 agent 安装
+# "帮我安装 subtitle-checker 技能"
+```
+
+安装后在新会话中自动可用，触发词：字幕检查、字幕修正、SRT修正、字幕校对。
+
+### 独立使用（无需 Hermes）
+
+```bash
+git clone git@github.com:mr-money/subtitle-checker.git
+cd subtitle-checker
+python scripts/subtitle_fixer.py input.srt --corrections fixes.json -v
+```
+
 ## 快速开始
 
-### Python
+### Python CLI
 
 ```bash
 # 基本用法
-python subtitle_fixer.py input.srt
+python scripts/subtitle_fixer.py input.srt
 
 # 指定错字修正词典和最大字数
-python subtitle_fixer.py input.srt --corrections fixes.json --max-chars 10 --verbose
+python scripts/subtitle_fixer.py input.srt --corrections fixes.json --max-chars 10 --verbose
 
 # 指定输出路径
-python subtitle_fixer.py input.srt -o output_fixed.srt
+python scripts/subtitle_fixer.py input.srt -o output_fixed.srt
 ```
 
-### Node.js
+### Node.js API
 
 ```javascript
-const { processFile } = require('./subtitle_fixer');
+const { processFile } = require('./scripts/subtitle_fixer');
 
 const result = processFile(
   'input.srt',                    // 输入文件
@@ -44,9 +66,9 @@ console.log(`原始: ${result.stats.orig} → 输出: ${result.stats.out}`);
 console.log(`修正: ${result.stats.fix} | 拆分: ${result.stats.split}`);
 ```
 
-## 输入格式
+## 输入/输出格式
 
-标准SRT字幕文件：
+**输入**：标准SRT字幕文件
 
 ```
 1
@@ -58,9 +80,7 @@ console.log(`修正: ${result.stats.fix} | 拆分: ${result.stats.split}`);
 第二行字幕内容
 ```
 
-## 输出格式
-
-修正后的SRT文件（序号重新编排，时间轴连续）：
+**输出**：修正后的SRT文件（序号重新编排，时间轴连续）
 
 ```
 1
@@ -108,44 +128,30 @@ console.log(`修正: ${result.stats.fix} | 拆分: ${result.stats.split}`);
 
 3. **时间轴**按字数比例分配，最后一段精确到原结束时间
 
-## 不可拆词表
-
-内置两类保护：
-
-- **2字连词**：所以、因为、但是、小孩、培养、教育...
-- **多字词组**：严师出高徒、宫商角徵羽、人生下半场...
-
-可通过 `extraWords`（Node.js）参数扩展。
-
-## 批量处理
-
-```bash
-# 处理目录下所有SRT文件
-for f in *.srt; do
-  python "$f" --corrections common_fixes.json -v
-done
-```
-
-## 文件结构
+## 项目结构
 
 ```
 subtitle-checker/
-├── README.md              # 本文档
-├── subtitle_fixer.py      # Python 版本（完整功能）
-├── subtitle_fixer.js      # Node.js 版本
+├── SKILL.md                        # Hermes Agent 技能定义
+├── README.md                       # 本文档
+├── scripts/
+│   ├── subtitle_fixer.py           # Python 版（完整功能）
+│   └── subtitle_fixer.js           # Node.js 版
+├── references/
+│   ├── mimo-asr-api.md             # MiMo ASR API 参考
+│   ├── asr-error-patterns.md       # ASR常见错误模式库
+│   └── asr-correction-patterns.md  # 错误修正模式指南
 ├── examples/
-│   ├── sample_input.srt   # 示例输入
-│   └── sample_fixes.json  # 示例修正词典
-├── docs/
-│   └── asr-error-patterns.md  # ASR常见错误模式参考
-├── LICENSE
+│   ├── sample_input.srt            # 示例输入
+│   └── sample_fixes.json           # 示例修正词典
+├── LICENSE                         # MIT
 └── .gitignore
 ```
 
 ## 依赖
 
-- **Python 版本**：无外部依赖，纯标准库
-- **Node.js 版本**：无外部依赖，纯标准库
+- **Python 版本**：无外部依赖，纯标准库（Python 3.6+）
+- **Node.js 版本**：无外部依赖，纯标准库（Node.js 14+）
 
 ## 适用场景
 
