@@ -196,6 +196,35 @@ for folder in sorted(all_corrections.keys()):
 如有原始音频且 <1MB，可用 mimo-v2.5-asr 转录后对比修正。
 详见 `references/mimo-asr-api.md`。
 
+### 已验证的 ASR 工作流
+
+mimo-v2.5-asr 已测试确认可用（2026-06-18），转录质量良好。
+
+```python
+# 1. 截取前30秒（避免超过10MB base64限制）
+# ffmpeg -i input.m4a -t 30 -ar 16000 -ac 1 -y /tmp/test.wav
+
+# 2. base64 编码 + 调用 API
+import base64
+from openai import OpenAI
+client = OpenAI(api_key=os.environ['XIAOMI_API_KEY'],
+                base_url=os.environ.get('XIAOMI_BASE_URL', 'https://api.xiaomimimo.com/v1'))
+
+with open('/tmp/test.wav', 'rb') as f:
+    audio_b64 = base64.b64encode(f.read()).decode()
+
+completion = client.chat.completions.create(
+    model='mimo-v2.5-asr',
+    messages=[{'role': 'user', 'content': [
+        {'type': 'input_audio', 'input_audio': {'data': f'data:audio/wav;base64,{audio_b64}'}}
+    ]}],
+    extra_body={'asr_options': {'language': 'zh'}}
+)
+print(completion.choices[0].message.content)
+```
+
+**实测数据**：30秒音频 → base64 1.22MB，API 响应 ~10秒，转录质量优于部分 ASR 错误。
+
 ## Common Pitfalls
 
 ### 1. 修正词典 key 必须精确匹配原文
