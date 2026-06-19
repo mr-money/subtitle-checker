@@ -33,8 +33,19 @@ git clone git@github.com:mr-money/subtitle-checker.git ~/.hermes/skills/media/su
 ```bash
 git clone git@github.com:mr-money/subtitle-checker.git
 cd subtitle-checker
+
+# 配置 API 密钥（首次使用）
+cp .env.example .env
+# 编辑 .env 填入你的 XIAOMI_API_KEY
+
+# 字幕修正（零依赖，无需 .env）
 python scripts/subtitle_fixer.py input.srt --corrections fixes.json -v
+
+# 大音频 ASR 转录（需要 .env 中的密钥）
+python scripts/audio_split_asr.py input.m4a
 ```
+
+> 💡 `.env` 文件仅在本地使用，不会被提交到仓库（已在 `.gitignore` 中排除）。
 
 ## 快速开始
 
@@ -72,7 +83,11 @@ python scripts/audio_split_asr.py input.m4a --language auto
 3. 拼接完整转录结果，输出到 JSON（含每段时间戳）
 
 **依赖**：ffmpeg, openai (`pip install openai`)
-**环境变量**：`XIAOMI_API_KEY`, `XIAOMI_BASE_URL`（在 `.env` 中配置）
+**环境变量**：`XIAOMI_API_KEY`, `XIAOMI_BASE_URL`
+
+配置方式（二选一）：
+- **独立使用**：项目根目录创建 `.env` 文件（参考 `.env.example`）
+- **Hermes 技能**：自动从 `~/.hermes/.env` 读取，无需额外配置
 
 ### 3. Node.js API
 
@@ -172,6 +187,7 @@ console.log(`修正: ${result.stats.fix} | 拆分: ${result.stats.split}`);
 subtitle-checker/
 ├── SKILL.md                        # Hermes Agent 技能定义
 ├── README.md                       # 本文档
+├── .env.example                    # 环境变量模板（复制为 .env 使用）
 ├── scripts/
 │   ├── subtitle_fixer.py           # 字幕修正（Python）
 │   ├── subtitle_fixer.js           # 字幕修正（Node.js）

@@ -7,7 +7,7 @@
     python audio_split_asr.py input.m4a [--segment-seconds 30] [--output transcript.txt]
 
 依赖: ffmpeg, openai (pip install openai)
-环境变量: XIAOMI_API_KEY, XIAOMI_BASE_URL (从 ~/.hermes/.env 或 /opt/data/.env 读取)
+环境变量: XIAOMI_API_KEY, XIAOMI_BASE_URL (优先读项目根目录 .env，其次 ~/.hermes/.env)
 """
 
 import argparse
@@ -24,10 +24,14 @@ import time
 
 
 def load_env():
-    """从 .env 文件加载环境变量"""
+    """从 .env 文件加载环境变量，优先级：项目根目录 .env > ~/.hermes/.env"""
+    # 项目根目录 = scripts/ 的上一级
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir)
+
     env_paths = [
-        os.path.expanduser("~/.hermes/.env"),
-        "/opt/data/.env",
+        os.path.join(project_root, ".env"),      # 项目根目录优先
+        os.path.expanduser("~/.hermes/.env"),     # Hermes 配置 fallback
     ]
     for path in env_paths:
         if os.path.exists(path):
@@ -115,7 +119,7 @@ def run_asr(input_path, segment_seconds=30, language="zh", output_path=None):
     base_url = os.environ.get("XIAOMI_BASE_URL", "https://api.xiaomimimo.com/v1")
 
     if not api_key:
-        print("❌ 未找到 XIAOMI_API_KEY，请在 /opt/data/.env 中配置")
+        print("❌ 未找到 XIAOMI_API_KEY，请在项目根目录 .env 中配置（参考 .env.example）")
         sys.exit(1)
 
     with tempfile.TemporaryDirectory() as tmpdir:
