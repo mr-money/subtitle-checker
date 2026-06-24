@@ -89,22 +89,6 @@ python scripts/audio_split_asr.py input.m4a --language auto
 - **独立使用**：项目根目录创建 `.env` 文件（参考 `.env.example`）
 - **Hermes 技能**：自动从 `~/.hermes/.env` 读取，无需额外配置
 
-### 3. Node.js API
-
-```javascript
-const { processFile } = require('./scripts/subtitle_fixer');
-
-const result = processFile(
-  'input.srt',                    // 输入文件
-  { '严实出高徒': '严师出高徒' }, // 错字修正词典
-  10,                             // 每行最大汉字数
-  'output_fixed.srt'              // 输出文件
-);
-
-console.log(`原始: ${result.stats.orig} → 输出: ${result.stats.out}`);
-console.log(`修正: ${result.stats.fix} | 拆分: ${result.stats.split}`);
-```
-
 ## 完整工作流（推荐）
 
 对于一条完整的字幕检查任务：
@@ -190,7 +174,6 @@ subtitle-checker/
 ├── .env.example                    # 环境变量模板（复制为 .env 使用）
 ├── scripts/
 │   ├── subtitle_fixer.py           # 字幕修正（Python）
-│   ├── subtitle_fixer.js           # 字幕修正（Node.js）
 │   └── audio_split_asr.py          # 大音频切片ASR转录
 ├── references/
 │   ├── mimo-asr-api.md             # MiMo ASR API 参考
@@ -206,12 +189,11 @@ subtitle-checker/
 
 ## 依赖
 
-| 工具 | Python 版 | Node.js 版 | audio_split_asr |
-|------|-----------|------------|-----------------|
-| Python 3.6+ | ✅ | — | ✅ |
-| Node.js 14+ | — | ✅ | — |
-| ffmpeg | — | — | ✅ |
-| openai | — | — | ✅ |
+| 工具 | subtitle_fixer.py | audio_split_asr.py |
+|------|-------------------|---------------------|
+| Python 3.6+ | ✅ | ✅ |
+| ffmpeg | — | ✅ |
+| openai | — | ✅ |
 
 字幕修正脚本（subtitle_fixer）**零外部依赖**，纯标准库。
 
