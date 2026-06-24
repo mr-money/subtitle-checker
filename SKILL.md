@@ -16,7 +16,7 @@ metadata:
 
 中文SRT字幕检查与修正工具，专为语音识别(ASR)生成的中文演讲/教学类字幕设计。支持错字修正、智能长行拆分、繁转简、时间轴重分配。
 
-提供 Python 和 Node.js 两个版本，零外部依赖。
+Python 实现，零外部依赖。
 
 ## When to Use
 
@@ -56,22 +56,6 @@ python scripts/subtitle_fixer.py input.srt --corrections fixes.json --max-chars 
 
 # 指定输出路径
 python scripts/subtitle_fixer.py input.srt -o output_fixed.srt
-```
-
-### Node.js API
-
-```javascript
-const { processFile } = require('./scripts/subtitle_fixer');
-
-const result = processFile(
-  'input.srt',                    // 输入文件
-  { '严实出高徒': '严师出高徒' }, // 错字修正词典
-  10,                             // 每行最大汉字数
-  'output_fixed.srt'              // 输出文件
-);
-
-console.log(`原始: ${result.stats.orig} → 输出: ${result.stats.out}`);
-console.log(`修正: ${result.stats.fix} | 拆分: ${result.stats.split}`);
 ```
 
 ## 核心规则
@@ -196,6 +180,15 @@ for folder in sorted(all_corrections.keys()):
 如有原始音频且 <1MB，可用 mimo-v2.5-asr 转录后对比修正。
 详见 `references/mimo-asr-api.md`。
 
+### ASR 环境变量配置
+
+`audio_split_asr.py` 的 `load_env()` 按以下优先级读取配置：
+
+1. **项目根目录 `.env`** — 独立使用时放这里（参考 `.env.example`）
+2. **`~/.hermes/.env`** — Hermes 技能环境下自动兜底
+
+> 💡 独立使用：`cp .env.example .env` 然后填入密钥。Hermes 环境下无需额外配置。
+
 ### 已验证的 ASR 工作流
 
 mimo-v2.5-asr 已测试确认可用（2026-06-18），转录质量良好。
@@ -250,7 +243,14 @@ print(completion.choices[0].message.content)
 mimo-v2.5-asr base64 上限 10MB。m4a→wav 膨胀 ~10x，base64 再膨胀 ~33%。
 - **>1MB 的 m4a → ASR 不可用**，走手动修正流程
 
-### 4. 不可修改的内容
+### 4. API 密钥安全
+
+- `.env` 必须在 `.gitignore` 中，绝不能推送到 GitHub
+- `.env.example` 只放占位值（`your_a...`），不放真实密钥
+- 修改 `load_env()` 后检查路径逻辑，确认不会意外读到含密钥的文件
+- **用户原话**："千万不要把我的订阅密钥的信息推送到github上"
+
+### 5. 不可修改的内容
 
 - 口语化表达（"你放心好了"）→ 保持原样
 - 演讲者可能故意的说法 → 保持原样
