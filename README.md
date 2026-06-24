@@ -149,6 +149,21 @@ python scripts/audio_split_asr.py input.m4a --language auto
 
 > ⚠️ **重要**：key 必须是SRT文件中的**精确子串**，否则不会匹配。
 
+## 数据文件维护
+
+所有词典和词表都在 `data/` 目录下，JSON格式，可直接编辑：
+
+| 文件 | 用途 | 格式 |
+|------|------|------|
+| `default_corrections.json` | 默认错字修正词典 | `{"错误文本": "正确文本"}` |
+| `no_split_2.json` | 2字不可拆词表 | `["所以", "因为", ...]` |
+| `no_split_phrases.json` | 多字不可断词组 | `["严师出高徒", ...]` |
+
+- `--corrections` 指定自定义词典时，**覆盖**默认词典（不合并）
+- 不指定 `--corrections` 时，自动加载 `default_corrections.json`
+- 不可拆词表始终从 `data/` 目录加载，无需额外参数
+- 以 `_` 开头的key/元素会被自动过滤，可作为注释使用
+
 ## 智能拆分算法
 
 当一行字幕超过 `max_chars` 个汉字时：
@@ -172,8 +187,12 @@ subtitle-checker/
 ├── SKILL.md                        # Hermes Agent 技能定义
 ├── README.md                       # 本文档
 ├── .env.example                    # 环境变量模板（复制为 .env 使用）
+├── data/
+│   ├── no_split_2.json             # 2字不可拆词表（可自定义）
+│   ├── no_split_phrases.json       # 多字不可断词组（可自定义）
+│   └── default_corrections.json    # 默认错字修正词典（可自定义）
 ├── scripts/
-│   ├── subtitle_fixer.py           # 字幕修正（Python）
+│   ├── subtitle_fixer.py           # 字幕修正
 │   └── audio_split_asr.py          # 大音频切片ASR转录
 ├── references/
 │   ├── mimo-asr-api.md             # MiMo ASR API 参考

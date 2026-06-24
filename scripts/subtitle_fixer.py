@@ -13,6 +13,27 @@ import json
 import os
 import argparse
 
+# ===== 数据目录 =====
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
+
+def _load_json_list(filename):
+    """从data目录加载JSON数组文件，过滤掉以_开头的注释项"""
+    path = os.path.join(DATA_DIR, filename)
+    if not os.path.exists(path):
+        return []
+    with open(path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    return [x for x in data if not x.startswith('_')]
+
+def _load_json_dict(filename):
+    """从data目录加载JSON对象文件，过滤掉以_开头的key"""
+    path = os.path.join(DATA_DIR, filename)
+    if not os.path.exists(path):
+        return {}
+    with open(path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    return {k: v for k, v in data.items() if not k.startswith('_')}
+
 
 # ===== 基础工具 =====
 
@@ -153,52 +174,10 @@ def apply_corrections(text, corrections):
 # ===== 智能拆分 v2 =====
 
 # --- 2字不可拆词（相邻两字不可从中间断） ---
-NO_SPLIT_2 = set([
-    # 连词/副词
-    '所以', '因为', '但是', '而且', '或者', '然后', '如果', '就是', '而是', '不过',
-    '因此', '虽然', '可是', '并且', '甚至', '于是', '能够', '应该', '已经', '正在',
-    '可以', '不是', '没有', '什么', '他们', '我们', '你们', '自己', '怎么',
-    # 称谓/人称
-    '小孩', '孩子', '先生', '老师', '父母', '家长', '大人', '个人',
-    # 数量
-    '一个', '六十', '七十', '八十', '九十', '很多',
-    # 动词短语
-    '知道', '发现', '告诉', '认为', '需要', '开始', '喜欢', '重要',
-    '培养', '教育', '代表', '叫做', '下来', '起来', '出来',
-    '过去', '过来', '上去', '到了', '看到', '听到', '感到', '学到',
-    '才会', '才能', '有人', '其实', '一定', '不会', '不要', '不能', '不好',
-    # 名词/时间
-    '时候', '音乐', '古代', '人生', '这个', '那个',
-    # 专有名词
-    '日本', '中国', '曾国', '孔老', '夫子', '康家', '华学', '老天',
-    '大半', '就有', '也是', '都有', '还能', '还是', '更是', '都会',
-    '尚书', '古琴', '围棋', '书法', '武术',
-    # 动宾/补充
-    '告诉', '培养', '教育', '帮助', '改变',
-])
+NO_SPLIT_2 = set(_load_json_list('no_split_2.json'))
 
 # --- 多字不可断词组（整个词组不可被拆开，任何位置都不行） ---
-NO_SPLIT_PHRASES = [
-    # 4字成语
-    '严师出高徒', '手无缚鸡之力', '一贫如洗', '周游列国', '千军万马',
-    '大气磅礴', '一砖一瓦', '大道至简', '剑胆琴心', '保家卫国',
-    '修身齐家', '取法乎上', '取法乎中',
-    # 文化术语（3-6字）
-    '中华民族', '礼仪之邦', '诗词歌赋', '宫商角徵羽', '礼乐射御书数',
-    '人生下半场', '低级趣味', '君子六艺', '人生观', '世界观', '方法论',
-    '孔老夫子', '曾国藩', '兴趣爱好', '高雅兴趣',
-    # 教育场景
-    '告诉小孩', '培养小孩', '教育小孩', '帮助小孩', '改变小孩', '改变成年人',
-    '启蒙老师', '训练基地', '夏令营',
-    '有信心', '有自信', '有王者之气',
-    # 引用/古文
-    '但问耕耘', '莫问收获', '种善因', '种恶因',
-    '道心惟微', '人心惟微',
-    # 演讲常用
-    '告诉你', '跟你讲', '跟各位讲', '跟各位报告',
-    '一个人', '小孩子', '成年人', '年轻人',
-    '不一定', '要不然', '不得不',
-]
+NO_SPLIT_PHRASES = _load_json_list('no_split_phrases.json')
 
 # 按长度降序排列（优先匹配长词）
 NO_SPLIT_PHRASES_SORTED = sorted(NO_SPLIT_PHRASES, key=len, reverse=True)
@@ -454,6 +433,12 @@ def main():
     if args.corrections and os.path.exists(args.corrections):
         with open(args.corrections, 'r', encoding='utf-8') as f:
             corrections = json.load(f)
+    else:
+        # 尝试加载默认词典
+        default_corr_path = os.path.join(DATA_DIR, 'default_corrections.json')
+        if os.path.exists(default_corr_path):
+            corrections = _load_json_dict('default_corrections.json')
+            print(f"使用默认词典: {default_corr_path} ({len(corrections)}条)")
 
     entries, changes, stats = process_file(
         args.input, corrections, args.max_chars, args.output
